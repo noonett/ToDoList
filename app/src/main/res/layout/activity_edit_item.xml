@@ -7,8 +7,14 @@
     <TextView
         android:id="@+id/textView1"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/edit" />
+        android:layout_height="98dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="6dp"
+        android:layout_marginBottom="6dp"
+        android:ems="10"
+        android:text="Edit/Add"
+        android:textColor="#3F51B5"
+        android:textSize="50sp" />
 
     <EditText
         android:id="@+id/etEditItem"
@@ -16,7 +22,23 @@
         android:layout_height="wrap_content"
         android:layout_below="@+id/textView1"
         android:layout_alignParentLeft="true"
-        android:ems="10">
+
+        android:layout_marginLeft="100sp"
+        android:ems="10"
+        android:hint="Input title">
+
+        <requestFocus />
+    </EditText>
+
+    <EditText
+        android:id="@+id/etEditTime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/etEditItem"
+        android:layout_alignParentLeft="true"
+        android:ems="10"
+        android:hint="touch to input date"
+        android:layout_marginLeft="100sp">
 
         <requestFocus />
     </EditText>
@@ -25,9 +47,9 @@
         android:id="@+id/btnSave"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignLeft="@+id/etEditItem"
-        android:layout_below="@+id/etEditItem"
-        android:layout_marginTop="25dp"
+        android:layout_below="@+id/etEditTime"
+        android:layout_marginLeft="300dp"
+        android:layout_marginTop="50dp"
         android:onClick="onSubmit"
         android:text="Save" />
 

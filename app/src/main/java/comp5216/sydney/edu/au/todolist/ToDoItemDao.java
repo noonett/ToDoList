@@ -4,12 +4,13 @@ import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
 import androidx.room.Query;
+import androidx.room.Update;
 
 import java.util.List;
 
 @Dao
 public interface ToDoItemDao {
-    @Query("SELECT * FROM todolist")
+    @Query("SELECT * FROM todolist2")
     List<ToDoItem> listAll();
 
     @Insert
@@ -18,6 +19,6 @@ public interface ToDoItemDao {
     @Insert
     void insertAll(ToDoItem... toDoItems);
 
-    @Query("DELETE FROM todolist")
+    @Query("DELETE FROM todolist2")
     void deleteAll();
 }

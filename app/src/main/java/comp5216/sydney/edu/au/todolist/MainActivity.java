@@ -21,23 +21,31 @@ import android.widget.Toast;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.ObjectStreamException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 public class MainActivity extends AppCompatActivity {
 
     // Define variables
     ListView listView;
-    ArrayList<String> items;
-    ArrayAdapter<String> itemsAdapter;
+    SimpleAdapter itemsAdapter;
     EditText addItemEditText;
+
     ToDoItemDB db;
     ToDoItemDao toDoItemDao;
 
-    //List<Map<String, Object>> listdata = new ArrayList<>();
+    List<Map<String, String>> items = new ArrayList<>();
+
+    List<Map<String, String>> infos = new ArrayList<>();
+    ActivityResultLauncher<Intent> mLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,7 +56,6 @@ public class MainActivity extends AppCompatActivity {
 
         // Reference the "listView" variable to the id "lstView" in the layout
         listView = (ListView) findViewById(R.id.lstView);
-        addItemEditText = (EditText) findViewById(R.id.txtNewItem);
 
         // Create an ArrayList of String
         //items = new ArrayList<String>();
@@ -61,33 +68,65 @@ public class MainActivity extends AppCompatActivity {
         // Create an instance of ToDoItemDB and ToDoItemDao
         db = ToDoItemDB.getDatabase(this.getApplication().getApplicationContext());
         toDoItemDao = db.toDoItemDao();
-        readItemsFromDatabase();
 
-//        String[] keys = {"title", "time"};
-//        int[] ids = {R.id.item_title, R.id.item_date};
-//        final SimpleAdapter itemsAdapter = new SimpleAdapter(MainActivity.this, listdata, R.layout.listview_item, keys, ids);
-
-        // Create an adapter for the list view using Android's built-in item layout
-        itemsAdapter = new ArrayAdapter<String>(this,
-                android.R.layout.simple_list_item_1,
-                items);
+        String[] keys = {"title", "time"};
+        int[] ids = {R.id.item_title, R.id.item_date};
+        itemsAdapter = new SimpleAdapter(MainActivity.this, items, R.layout.listview_item, keys, ids);
 
         // Connect the listView and the adapter
         listView.setAdapter(itemsAdapter);
 
         // Setup listView listeners
         setupListViewListener();
+
+        mLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK) {
+                        // Extract name value from result extras
+                        String editedTitle = result.getData().getExtras().getString("title");
+                        String editedTime = result.getData().getExtras().getString("time");
+                        int position = result.getData().getIntExtra("position", -1);
+
+
+                        Map<String, String> info = new HashMap<>();
+                        info.put("title", editedTitle);
+                        info.put("time", editedTime);
+
+                        Map<String, String> item = new HashMap<>();
+                        item.put("title", editedTitle);
+                        item.put("time", getRemainTime(editedTime));
+
+                        if (position == -1) {
+                            infos.add(info);
+                            items.add(item);
+                        } else {
+                            infos.set(position, info);
+                            items.set(position, item);
+                        }
+
+                        Log.i("Updated item in list ", editedTitle + ", time: " + editedTime + ", position: " + position);
+
+                        // Make a standard toast that just contains text
+                        Toast.makeText(getApplicationContext(), "Updated: " + editedTitle + ", time: " + editedTime, Toast.LENGTH_SHORT).show();
+                        itemsAdapter.notifyDataSetChanged();
+
+                        saveItemsToDatabase();
+                    }
+                }
+        );
+
+        readItemsFromDatabase();
     }
 
     public void onAddItemClick(View view) {
-        String toAddString = addItemEditText.getText().toString();
-        if (toAddString != null && toAddString.length() > 0) {
-            Date cur = new Date();
-            itemsAdapter.add(toAddString); // Add text to list view adapter
-            addItemEditText.setText("");
+        Log.i("MainActivity", "Add new Item!");
 
-            saveItemsToDatabase();
-        }
+        Intent intent = new Intent(MainActivity.this, EditToDoItemActivity.class);
+
+        // bring up the second activity
+        mLauncher.launch(intent);
+        itemsAdapter.notifyDataSetChanged();
     }
 
     private void setupListViewListener() {
@@ -100,6 +139,7 @@ public class MainActivity extends AppCompatActivity {
                         .setPositiveButton(R.string.delete, new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialogInterface, int i) {
                                 items.remove(position); // Remove item from the ArrayList
+                                infos.remove(position);
                                 itemsAdapter.notifyDataSetChanged(); // Notify listView adapter to update the list
                                 saveItemsToDatabase();
                             }
@@ -116,36 +156,19 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // Register a request to start an activity for result and register the result callback
-        ActivityResultLauncher<Intent> mLauncher = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                result -> {
-                    if (result.getResultCode() == RESULT_OK) {
-                        // Extract name value from result extras
-                        String editedItem = result.getData().getExtras().getString("item");
-                        int position = result.getData().getIntExtra("position", -1);
-                        items.set(position, editedItem);
-                        Log.i("Updated item in list ", editedItem + ", position: " + position);
-
-                        // Make a standard toast that just contains text
-                        Toast.makeText(getApplicationContext(), "Updated: " + editedItem, Toast.LENGTH_SHORT).show();
-                        itemsAdapter.notifyDataSetChanged();
-
-                        saveItemsToDatabase();
-                    }
-                }
-        );
-
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                String updateItem = (String) itemsAdapter.getItem(position);
-                Log.i("MainActivity", "Clicked item " + position + ": " + updateItem);
+                Map<String, Object> item = (Map<String, Object>) itemsAdapter.getItem(position);
+                String title = (String) item.get("title");
+                String time = (String) item.get("time");
+                Log.i("MainActivity", "Clicked item " + position + ": " + title);
 
                 Intent intent = new Intent(MainActivity.this, EditToDoItemActivity.class);
                 if (intent != null) {
                     // put "extras" into the bundle for access in the edit activity
-                    intent.putExtra("item", updateItem);
+                    intent.putExtra("title", title);
+                    intent.putExtra("time", time);
                     intent.putExtra("position", position);
 
                     // bring up the second activity
@@ -156,38 +179,8 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void readItemsFromFile() {
-        //retrieve the app's private folder.
-        //this folder cannot be accessed by other apps
-        File filesDir = getFilesDir();
-        //prepare a file to read the data
-        File todoFile = new File(filesDir, "todo.txt");
-        //if file does not exist, create an empty list
-        if (!todoFile.exists()) {
-            items = new ArrayList<String>();
-        } else {
-            try {
-                //read data and put it into the ArrayList
-                items = new ArrayList<String>(FileUtils.readLines(todoFile, "UTF-8"));
-            } catch (IOException ex) {
-                items = new ArrayList<String>();
-            }
-        }
-    }
-
-    private void saveItemsToFile() {
-        File filesDir = getFilesDir();
-        //using the same file for reading. Should use define a global string instead.
-        File todoFile = new File(filesDir, "todo.txt");
-        try {
-            //write list to file
-            FileUtils.writeLines(todoFile, items);
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-    }
-
     private void readItemsFromDatabase() {
+        System.out.println("read from database!");
         //Use asynchronous task to run query on the background and wait for result
         try {
             // Run a task specified by a Runnable Object asynchronously.
@@ -196,13 +189,29 @@ public class MainActivity extends AppCompatActivity {
                 public void run() {
                     //read items from database
                     List<ToDoItem> itemsFromDB = toDoItemDao.listAll();
-                    items = new ArrayList<String>();
-                    if (itemsFromDB != null & itemsFromDB.size() > 0) {
+                    System.out.println(itemsFromDB.size());
+
+                    items = new ArrayList<Map<String, String>>();
+                    infos = new ArrayList<Map<String, String>>();
+
+                    if (itemsFromDB != null && itemsFromDB.size() > 0) {
                         for (ToDoItem item : itemsFromDB) {
-                            items.add(item.getToDoItemName());
-                            Log.i("SQLite read item", "ID: " + item.getToDoItemID() + " Name: " + item.getToDoItemName());
+                            Map<String, String> todo = new HashMap<>();
+                            Map<String, String> info = new HashMap<>();
+                            todo.put("title", (String) item.getToDoItemName());
+                            info.put("title", (String) item.getToDoItemName());
+
+                            String dateString = (String) item.getToDoItemTime();
+                            if (dateString != null) {
+                                todo.put("time", getRemainTime(dateString));
+                                info.put("time", dateString);
+                            }
+                            items.add(todo);
+                            infos.add(info);
+                            Log.i("SQLite read item", "ID: " + item.getToDoItemID() + " Name: " + item.getToDoItemName() + "time");
                         }
                     }
+                    System.out.println(items.size());
                     System.out.println("I'll run in a separate thread than the main thread.");
                 }
             });
@@ -223,10 +232,10 @@ public class MainActivity extends AppCompatActivity {
                 public void run() {
                     //delete all items and re-insert
                     toDoItemDao.deleteAll();
-                    for (String todo : items) {
-                        ToDoItem item = new ToDoItem(todo);
+                    for (Map<String, String> todo : infos) {
+                        ToDoItem item = new ToDoItem((String) todo.get("title"), (String) todo.get("time"));
                         toDoItemDao.insert(item);
-                        Log.i("SQLite saved item", todo);
+                        Log.i("SQLite saved item", (String) todo.get("title"));
                     }
                     System.out.println("I'll run in a separate thread than the main thread.");
                 }
@@ -237,5 +246,50 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception ex) {
             Log.e("saveItemsToDatabase", ex.getStackTrace().toString());
         }
+    }
+
+    private String getRemainTime(String dateString) {
+        Date date = null;
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd  hh:mm");
+        try {
+            date = df.parse(dateString);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        String time = "";
+        Date cur = new Date();
+        if (cur.after(date)) {
+            time = "OVERDUE";
+        } else {
+            long dateSecond = date.getTime() / 1000;
+            long curSecond = cur.getTime() / 1000;
+            long secondBetween = dateSecond - curSecond;
+            long dayBetween = secondBetween / (3600 * 24);
+            secondBetween -= dayBetween * 3600 * 24;
+            long hourBetween = secondBetween / 3600;
+            secondBetween -= hourBetween * 3600;
+            long minBetween = secondBetween / 60;
+
+            if (dayBetween >= 0) {
+                String str = dayBetween <= 1 ? " day" : " days";
+                time += dayBetween + str;
+            }
+            if (hourBetween >= 0) {
+                if (!time.equals("")) {
+                    time += " ";
+                }
+                String str = hourBetween <= 1 ? " hour" : " hours";
+                time += hourBetween + str;
+            }
+            if (minBetween >= 0) {
+                if (!time.equals("")) {
+                    time += " ";
+                }
+                String str = minBetween <= 1 ? " min" : " mins";
+                time += minBetween + str;
+            }
+
+        }
+        return time;
     }
 }
