@@ -15,8 +15,12 @@ public class ToDoItem {
     @ColumnInfo(name = "toDoItemName")
     private String toDoItemName;
 
-    public ToDoItem(String toDoItemName){
+    @ColumnInfo(name = "toDoItemTime")
+    private String toDoItemTime;
+
+    public ToDoItem(String toDoItemName, String toDoItemTime) {
         this.toDoItemName = toDoItemName;
+        this.toDoItemTime = toDoItemTime;
     }
 
     public int getToDoItemID() {
@@ -31,7 +35,7 @@ public class ToDoItem {
         return toDoItemName;
     }
 
-    public void setToDoItemName(String toDoItemName) {
-        this.toDoItemName = toDoItemName;
+    public String getToDoItemTime() {
+        return toDoItemTime;
     }
 }
