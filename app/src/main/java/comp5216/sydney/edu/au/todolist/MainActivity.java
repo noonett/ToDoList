@@ -25,6 +25,7 @@ import java.io.ObjectStreamException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -46,6 +47,9 @@ public class MainActivity extends AppCompatActivity {
 
     List<Map<String, String>> infos = new ArrayList<>();
     ActivityResultLauncher<Intent> mLauncher;
+
+    String[] keys = {"title", "time"};
+    int[] ids = {R.id.item_title, R.id.item_date};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,9 +73,9 @@ public class MainActivity extends AppCompatActivity {
         db = ToDoItemDB.getDatabase(this.getApplication().getApplicationContext());
         toDoItemDao = db.toDoItemDao();
         readItemsFromDatabase();
+        // Sort view after load items.
+        sortView();
 
-        String[] keys = {"title", "time"};
-        int[] ids = {R.id.item_title, R.id.item_date};
         itemsAdapter = new SimpleAdapter(MainActivity.this, items, R.layout.listview_item, keys, ids);
 
         // Connect the listView and the adapter
@@ -89,7 +93,6 @@ public class MainActivity extends AppCompatActivity {
                         String editedTime = result.getData().getExtras().getString("time");
                         int position = result.getData().getIntExtra("position", -1);
 
-
                         Map<String, String> info = new HashMap<>();
                         info.put("title", editedTitle);
                         info.put("time", editedTime);
@@ -106,10 +109,14 @@ public class MainActivity extends AppCompatActivity {
                             items.set(position, item);
                         }
 
+                        // Sort view after update items.
+                        sortView();
+
                         Log.i("Updated item in list ", editedTitle + ", time: " + editedTime + ", position: " + position);
 
                         // Make a standard toast that just contains text
                         Toast.makeText(getApplicationContext(), "Updated: " + editedTitle + ", time: " + editedTime, Toast.LENGTH_SHORT).show();
+
                         itemsAdapter.notifyDataSetChanged();
 
                         saveItemsToDatabase();
@@ -125,7 +132,6 @@ public class MainActivity extends AppCompatActivity {
 
         // bring up the second activity
         mLauncher.launch(intent);
-        System.out.println(items.size());
         itemsAdapter.notifyDataSetChanged();
     }
 
@@ -140,8 +146,10 @@ public class MainActivity extends AppCompatActivity {
                             public void onClick(DialogInterface dialogInterface, int i) {
                                 items.remove(position); // Remove item from the ArrayList
                                 infos.remove(position);
+                                sortView();
                                 itemsAdapter.notifyDataSetChanged(); // Notify listView adapter to update the list
                                 saveItemsToDatabase();
+                                Log.i("Delete an", " item " + position);
                             }
                         })
                         .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
@@ -205,7 +213,6 @@ public class MainActivity extends AppCompatActivity {
                                 todo.put("time", getRemainTime(dateString));
                                 info.put("time", dateString);
                             }
-                            printMap(todo);
                             items.add(todo);
                             infos.add(info);
                             Log.i("SQLite read item", "ID: " + item.getToDoItemID() + " Name: " + item.getToDoItemName() + "time");
@@ -215,12 +222,8 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
 
-
             // Block and wait for the future to complete
             future.get();
-            for (int i = 0; i < items.size(); i++) {
-                printMap(items.get(i));
-            }
         } catch (Exception ex) {
             Log.e("readItemsFromDatabase", ex.getStackTrace().toString());
         }
@@ -228,6 +231,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void saveItemsToDatabase() {
         //Use asynchronous task to run query on the background to avoid locking UI
+        // Sort view before persist items.
+        sortView();
         try {
             // Run a task specified by a Runnable Object asynchronously.
             CompletableFuture<Void> future = CompletableFuture.runAsync(new Runnable() {
@@ -243,12 +248,12 @@ public class MainActivity extends AppCompatActivity {
                     System.out.println("I'll run in a separate thread than the main thread.");
                 }
             });
-
             // Block and wait for the future to complete
             future.get();
         } catch (Exception ex) {
             Log.e("saveItemsToDatabase", ex.getStackTrace().toString());
         }
+
     }
 
     private void printMap(Map<String, String> map) {
@@ -259,6 +264,10 @@ public class MainActivity extends AppCompatActivity {
         System.out.println(str.toString());
     }
 
+    /*
+     *   Get remaining time to due
+     *   "yyyy-MM-dd  hh:mm"  => "x days y hours z mins"
+     * */
     private String getRemainTime(String dateString) {
         Date date = null;
         SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd  hh:mm");
@@ -281,26 +290,82 @@ public class MainActivity extends AppCompatActivity {
             secondBetween -= hourBetween * 3600;
             long minBetween = secondBetween / 60;
 
-            if (dayBetween >= 0) {
-                String str = dayBetween <= 1 ? " day" : " days";
-                time += dayBetween + str;
-            }
-            if (hourBetween >= 0) {
-                if (!time.equals("")) {
-                    time += " ";
-                }
-                String str = hourBetween <= 1 ? " hour" : " hours";
-                time += hourBetween + str;
-            }
-            if (minBetween >= 0) {
-                if (!time.equals("")) {
-                    time += " ";
-                }
-                String str = minBetween <= 1 ? " min" : " mins";
-                time += minBetween + str;
-            }
+
+            String str = dayBetween <= 1 ? " day" : " days";
+            time += dayBetween + str;
+
+
+            time += " ";
+            str = hourBetween <= 1 ? " hour" : " hours";
+            time += hourBetween + str;
+
+
+            time += " ";
+            str = minBetween <= 1 ? " min" : " mins";
+            time += minBetween + str;
 
         }
         return time;
+    }
+
+    /*
+     *   Inner class for sort.
+     *
+     * */
+    class SortNode {
+        int originIdx;
+        Map<String, String> info;
+
+        public SortNode(int idx, Map<String, String> info) {
+            this.originIdx = idx;
+            this.info = info;
+        }
+
+        public int compareTo(SortNode target) {
+            String t1 = this.info.get("time");
+            String t2 = target.info.get("time");
+            SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd  hh:mm");
+            Date date1 = null;
+            Date date2 = null;
+            try {
+                date1 = df.parse(t1);
+                date2 = df.parse(t2);
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+            long dateMin1 = date1.getTime() / (1000 * 60);
+            long dateMin2 = date2.getTime() / (1000 * 60);
+            return (int) (dateMin1 - dateMin2);
+        }
+    }
+
+
+    /*
+     *   Sort the items and infos.
+     * */
+    private void sortView() {
+        List<SortNode> list = new ArrayList<>();
+        for (int i = 0; i < infos.size(); ++i) {
+            list.add(new SortNode(i, infos.get(i)));
+        }
+        list.sort(new Comparator<SortNode>() {
+            @Override
+            public int compare(SortNode n1, SortNode n2) {
+                return n1.compareTo(n2);
+            }
+        });
+        List<Map<String, String>> sortedItems = new ArrayList<Map<String, String>>();
+        List<Map<String, String>> sortedInfos = new ArrayList<Map<String, String>>();
+        for (int i = 0; i < list.size(); ++i) {
+            int idx = list.get(i).originIdx;
+            sortedItems.add(items.get(idx));
+            sortedInfos.add(infos.get(idx));
+        }
+        items = sortedItems;
+        infos = sortedInfos;
+        itemsAdapter = new SimpleAdapter(MainActivity.this, items, R.layout.listview_item, keys, ids);
+
+        // Connect the listView and the adapter
+        listView.setAdapter(itemsAdapter);
     }
 }

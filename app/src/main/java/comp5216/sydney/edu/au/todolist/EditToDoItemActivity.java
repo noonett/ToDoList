@@ -44,6 +44,24 @@ public class EditToDoItemActivity extends Activity implements View.OnTouchListen
 
     }
 
+    public void onCancel(View v) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(EditToDoItemActivity.this);
+        builder.setTitle(R.string.dialog_cancel_title)
+                .setMessage(R.string.dialog_cancel_msg)
+                .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        finish(); // Close the activity, pass data to parent
+                    }
+                })
+                .setNegativeButton(R.string.no, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        // User cancelled the dialog
+                        // Nothing happens
+                    }
+                });
+        builder.create().show();
+    }
+
     public void onSubmit(View v) {
 
         etItem = (EditText) findViewById(R.id.etEditItem);
