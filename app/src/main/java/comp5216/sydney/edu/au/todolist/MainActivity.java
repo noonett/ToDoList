@@ -38,7 +38,6 @@ public class MainActivity extends AppCompatActivity {
     // Define variables
     ListView listView;
     SimpleAdapter itemsAdapter;
-    EditText addItemEditText;
 
     ToDoItemDB db;
     ToDoItemDao toDoItemDao;
@@ -61,18 +60,11 @@ public class MainActivity extends AppCompatActivity {
         // Reference the "listView" variable to the id "lstView" in the layout
         listView = (ListView) findViewById(R.id.lstView);
 
-        // Create an ArrayList of String
-        //items = new ArrayList<String>();
-        //items.add("item one");
-        //items.add("item two");
-
-        // Must call it before creating the adapter, because it references the right item list
-        //readItemsFromFile();
-
         // Create an instance of ToDoItemDB and ToDoItemDao
         db = ToDoItemDB.getDatabase(this.getApplication().getApplicationContext());
         toDoItemDao = db.toDoItemDao();
         readItemsFromDatabase();
+
         // Sort view after load items.
         sortView();
 
@@ -109,7 +101,7 @@ public class MainActivity extends AppCompatActivity {
                             items.set(position, item);
                         }
 
-                        // Sort view after update items.
+                        // Sort view after add of update items.
                         sortView();
 
                         Log.i("Updated item in list ", editedTitle + ", time: " + editedTime + ", position: " + position);
@@ -125,6 +117,7 @@ public class MainActivity extends AppCompatActivity {
         );
     }
 
+    // OnClick even when user click ADD NEW.
     public void onAddItemClick(View view) {
         Log.i("MainActivity", "Add new Item!");
 
@@ -290,15 +283,12 @@ public class MainActivity extends AppCompatActivity {
             secondBetween -= hourBetween * 3600;
             long minBetween = secondBetween / 60;
 
-
             String str = dayBetween <= 1 ? " day" : " days";
             time += dayBetween + str;
-
 
             time += " ";
             str = hourBetween <= 1 ? " hour" : " hours";
             time += hourBetween + str;
-
 
             time += " ";
             str = minBetween <= 1 ? " min" : " mins";
@@ -358,8 +348,16 @@ public class MainActivity extends AppCompatActivity {
         List<Map<String, String>> sortedInfos = new ArrayList<Map<String, String>>();
         for (int i = 0; i < list.size(); ++i) {
             int idx = list.get(i).originIdx;
-            sortedItems.add(items.get(idx));
-            sortedInfos.add(infos.get(idx));
+
+
+            Map<String, String> info = infos.get(idx);
+            Map<String, String> item = items.get(idx);
+
+            // recompute the Due.
+            item.put("time", getRemainTime(info.get("time")));
+
+            sortedInfos.add(info);
+            sortedItems.add(item);
         }
         items = sortedItems;
         infos = sortedInfos;

@@ -7,7 +7,7 @@
     <DatePicker
         android:id="@+id/date_picker"
         android:layout_width="match_parent"
-        android:layout_height="336dp"
+        android:layout_height="400dp"
         android:datePickerMode="spinner" />
 
     <TimePicker

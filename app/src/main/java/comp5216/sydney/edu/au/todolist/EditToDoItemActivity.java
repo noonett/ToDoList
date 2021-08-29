@@ -44,6 +44,7 @@ public class EditToDoItemActivity extends Activity implements View.OnTouchListen
 
     }
 
+    // Handle Cancel in add/edit task view
     public void onCancel(View v) {
         AlertDialog.Builder builder = new AlertDialog.Builder(EditToDoItemActivity.this);
         builder.setTitle(R.string.dialog_cancel_title)
@@ -62,6 +63,7 @@ public class EditToDoItemActivity extends Activity implements View.OnTouchListen
         builder.create().show();
     }
 
+    // Submit event
     public void onSubmit(View v) {
 
         etItem = (EditText) findViewById(R.id.etEditItem);

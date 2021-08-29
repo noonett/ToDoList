@@ -13,9 +13,9 @@
         android:layout_marginEnd="6dp"
         android:layout_marginBottom="6dp"
         android:ems="10"
-        android:text="Edit/Add"
+        android:text="Edit/Add Task"
         android:textColor="#3F51B5"
-        android:textSize="50sp" />
+        android:textSize="40sp" />
 
     <EditText
         android:id="@+id/etEditItem"
@@ -49,7 +49,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/etEditTime"
-        android:layout_marginLeft="300dp"
+        android:layout_marginLeft="250dp"
         android:layout_marginTop="50dp"
         android:onClick="onSubmit"
         android:text="Save" />
@@ -59,7 +59,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/etEditTime"
-        android:layout_marginLeft="30dp"
+        android:layout_marginLeft="150dp"
         android:layout_marginTop="50dp"
         android:onClick="onCancel"
 
