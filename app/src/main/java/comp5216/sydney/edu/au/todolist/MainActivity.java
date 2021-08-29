@@ -1,7 +1,5 @@
 package comp5216.sydney.edu.au.todolist;
 
-import org.apache.commons.io.FileUtils;
-
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
@@ -13,15 +11,10 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.Toast;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.ObjectStreamException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -31,7 +24,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -104,14 +96,11 @@ public class MainActivity extends AppCompatActivity {
                         // Sort view after add of update items.
                         sortView();
 
-                        Log.i("Updated item in list ", editedTitle + ", time: " + editedTime + ", position: " + position);
-
                         // Make a standard toast that just contains text
                         Toast.makeText(getApplicationContext(), "Updated: " + editedTitle + ", time: " + editedTime, Toast.LENGTH_SHORT).show();
-
                         itemsAdapter.notifyDataSetChanged();
-
                         saveItemsToDatabase();
+                        Log.i("Updated item in list ", editedTitle + ", time: " + editedTime + ", position: " + position);
                     }
                 }
         );
@@ -151,7 +140,6 @@ public class MainActivity extends AppCompatActivity {
                                 // Nothing happens
                             }
                         });
-
                 builder.create().show();
                 return true;
             }
@@ -249,14 +237,6 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private void printMap(Map<String, String> map) {
-        StringBuilder str = new StringBuilder();
-        for (String k : map.keySet()) {
-            str.append(k).append(" - ").append(map.get(k)).append("     ");
-        }
-        System.out.println(str.toString());
-    }
-
     /*
      *   Get remaining time to due
      *   "yyyy-MM-dd  hh:mm"  => "x days y hours z mins"
@@ -300,7 +280,6 @@ public class MainActivity extends AppCompatActivity {
 
     /*
      *   Inner class for sort.
-     *
      * */
     class SortNode {
         int originIdx;
@@ -348,7 +327,6 @@ public class MainActivity extends AppCompatActivity {
         List<Map<String, String>> sortedInfos = new ArrayList<Map<String, String>>();
         for (int i = 0; i < list.size(); ++i) {
             int idx = list.get(i).originIdx;
-
 
             Map<String, String> info = infos.get(idx);
             Map<String, String> item = items.get(idx);

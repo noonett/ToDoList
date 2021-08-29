@@ -35,16 +35,7 @@ public class ToDoItem {
         return toDoItemName;
     }
 
-    public void setToDoItemName(String toDoItemName) {
-        this.toDoItemName = toDoItemName;
-    }
-
     public String getToDoItemTime() {
         return toDoItemTime;
     }
-
-    public void setToDoItemTime(String toDoItemTime) {
-        this.toDoItemTime = toDoItemTime;
-    }
-
 }
