@@ -5,7 +5,7 @@ import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 import androidx.annotation.NonNull;
 
-@Entity(tableName = "todolist2")
+@Entity(tableName = "todolist")
 public class ToDoItem {
     @PrimaryKey(autoGenerate = true)
     @NonNull

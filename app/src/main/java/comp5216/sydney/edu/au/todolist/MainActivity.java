@@ -68,6 +68,7 @@ public class MainActivity extends AppCompatActivity {
         // Create an instance of ToDoItemDB and ToDoItemDao
         db = ToDoItemDB.getDatabase(this.getApplication().getApplicationContext());
         toDoItemDao = db.toDoItemDao();
+        readItemsFromDatabase();
 
         String[] keys = {"title", "time"};
         int[] ids = {R.id.item_title, R.id.item_date};
@@ -115,8 +116,6 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
         );
-
-        readItemsFromDatabase();
     }
 
     public void onAddItemClick(View view) {
@@ -126,6 +125,7 @@ public class MainActivity extends AppCompatActivity {
 
         // bring up the second activity
         mLauncher.launch(intent);
+        System.out.println(items.size());
         itemsAdapter.notifyDataSetChanged();
     }
 
@@ -159,15 +159,15 @@ public class MainActivity extends AppCompatActivity {
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Map<String, Object> item = (Map<String, Object>) itemsAdapter.getItem(position);
+                Map<String, String> item = (Map<String, String>) itemsAdapter.getItem(position);
                 String title = (String) item.get("title");
-                String time = (String) item.get("time");
                 Log.i("MainActivity", "Clicked item " + position + ": " + title);
 
                 Intent intent = new Intent(MainActivity.this, EditToDoItemActivity.class);
                 if (intent != null) {
                     // put "extras" into the bundle for access in the edit activity
                     intent.putExtra("title", title);
+                    String time = (String) infos.get(position).get("time");
                     intent.putExtra("time", time);
                     intent.putExtra("position", position);
 
@@ -180,7 +180,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void readItemsFromDatabase() {
-        System.out.println("read from database!");
         //Use asynchronous task to run query on the background and wait for result
         try {
             // Run a task specified by a Runnable Object asynchronously.
@@ -206,18 +205,22 @@ public class MainActivity extends AppCompatActivity {
                                 todo.put("time", getRemainTime(dateString));
                                 info.put("time", dateString);
                             }
+                            printMap(todo);
                             items.add(todo);
                             infos.add(info);
                             Log.i("SQLite read item", "ID: " + item.getToDoItemID() + " Name: " + item.getToDoItemName() + "time");
                         }
                     }
-                    System.out.println(items.size());
                     System.out.println("I'll run in a separate thread than the main thread.");
                 }
             });
 
+
             // Block and wait for the future to complete
             future.get();
+            for (int i = 0; i < items.size(); i++) {
+                printMap(items.get(i));
+            }
         } catch (Exception ex) {
             Log.e("readItemsFromDatabase", ex.getStackTrace().toString());
         }
@@ -246,6 +249,14 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception ex) {
             Log.e("saveItemsToDatabase", ex.getStackTrace().toString());
         }
+    }
+
+    private void printMap(Map<String, String> map) {
+        StringBuilder str = new StringBuilder();
+        for (String k : map.keySet()) {
+            str.append(k).append(" - ").append(map.get(k)).append("     ");
+        }
+        System.out.println(str.toString());
     }
 
     private String getRemainTime(String dateString) {

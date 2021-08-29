@@ -8,7 +8,7 @@ import android.content.Context;
 
 @Database(entities = {ToDoItem.class}, version = 1, exportSchema = false)
 public abstract class ToDoItemDB extends RoomDatabase {
-    private static final String DATABASE_NAME = "todoitem2_db";
+    private static final String DATABASE_NAME = "todoitem_db";
     private static ToDoItemDB DBINSTANCE;
 
     public abstract ToDoItemDao toDoItemDao();

@@ -10,7 +10,7 @@ import java.util.List;
 
 @Dao
 public interface ToDoItemDao {
-    @Query("SELECT * FROM todolist2")
+    @Query("SELECT * FROM todolist")
     List<ToDoItem> listAll();
 
     @Insert
@@ -19,6 +19,6 @@ public interface ToDoItemDao {
     @Insert
     void insertAll(ToDoItem... toDoItems);
 
-    @Query("DELETE FROM todolist2")
+    @Query("DELETE FROM todolist")
     void deleteAll();
 }
